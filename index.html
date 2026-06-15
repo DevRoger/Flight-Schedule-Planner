@@ -3,35 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Flight Schedule Planner Pro</title>
+    <title>AeroSchedule Pro - Flight Planner</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div class="header-title">
-        <h1 style="margin: 0; font-size: 22px">Flight Schedule Planner</h1>
+    <header class="top-bar">
+      <div class="top-bar-start">
+        <span class="material-icons app-logo" style="color: var(--primary)"
+          >flight_takeoff</span
+        >
+        <h1 class="app-title">AeroSchedule</h1>
       </div>
-      <div class="theme-switch-wrapper">
-        <span style="font-size: 14px; font-weight: 500">Modo Oscuro</span>
-        <label class="switch">
-          <input type="checkbox" id="themeToggle" onchange="toggleTheme()" />
-          <span class="slider"></span>
-        </label>
+      <div class="top-bar-end">
+        <div class="theme-switch-wrapper">
+          <span class="material-icons theme-icon">light_mode</span>
+          <label class="switch">
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme()" />
+            <span class="slider"></span>
+          </label>
+          <span class="material-icons theme-icon">dark_mode</span>
+        </div>
       </div>
     </header>
 
     <div class="controls card">
       <div class="control-group">
-        <label>Nuevo Stand</label>
+        <label>Nuevo Stand (Avión)</label>
         <div style="display: flex; gap: 5px">
           <input
             type="text"
             id="newStandName"
-            placeholder="Nombre (Ej. Puerta 1)"
+            placeholder="Nombre (Ej. BCN-737)"
           />
           <input
             type="color"
@@ -40,7 +50,7 @@
             title="Color del Stand"
           />
         </div>
-        <button onclick="addStand()" class="btn-primary">Añadir Stand</button>
+        <button onclick="addStand()" class="btn-primary">Añadir</button>
       </div>
 
       <div class="divider"></div>
@@ -83,10 +93,12 @@
 
       <div class="control-group">
         <label>Asignación</label>
-        <select id="standSelect"></select>
-        <button onclick="addFlight()" class="btn-success">
-          Programar Vuelo
-        </button>
+        <div style="display: flex; gap: 10px">
+          <select id="standSelect" style="flex: 1"></select>
+          <button onclick="addFlight()" class="btn-success">
+            Programar Vuelo
+          </button>
+        </div>
       </div>
     </div>
 
@@ -107,6 +119,7 @@
 
     <div class="planner-wrapper card">
       <div class="sidebar" id="sidebar"></div>
+
       <div class="timeline-container">
         <div id="timelineScrollArea" class="timeline-scroll">
           <div class="time-header" id="timeHeader"></div>
