@@ -203,68 +203,6 @@
 
     <div class="side-drawer" id="editDrawer">
       <div class="drawer-header">
-        <h3>Editar Vuelo</h3>
-        <button
-          class="btn-icon"
-          onclick="closeAllDrawers()"
-          style="border: none"
-        >
-          ✕
-        </button>
-      </div>
-      <div class="drawer-content">
-        <input type="hidden" id="editFlightInternalId" />
-
-        <div class="control-group">
-          <label>ID y Color</label>
-          <div style="display: flex; gap: 10px">
-            <input type="text" id="editFlightId" style="flex: 1" />
-            <input type="color" id="editFlightColor" style="width: 50px" />
-          </div>
-        </div>
-        <div class="control-group">
-          <label>Ruta</label>
-          <div style="display: flex; gap: 10px">
-            <select id="editOrigin" style="flex: 1"></select>
-            <span style="align-self: center">→</span>
-            <select id="editDestination" style="flex: 1"></select>
-          </div>
-        </div>
-        <div class="control-group">
-          <label>Salida</label>
-          <div style="display: flex; gap: 10px">
-            <input type="date" id="editDepDate" style="flex: 1" />
-            <input type="time" id="editDepTime" style="flex: 1" />
-          </div>
-        </div>
-        <div class="control-group">
-          <label>Llegada</label>
-          <div style="display: flex; gap: 10px">
-            <input type="date" id="editArrDate" style="flex: 1" />
-            <input type="time" id="editArrTime" style="flex: 1" />
-          </div>
-        </div>
-        <div class="control-group">
-          <label>Stand Asignado</label>
-          <select id="editStandSelect"></select>
-        </div>
-      </div>
-      <div class="drawer-footer">
-        <button
-          class="btn-icon"
-          onclick="closeAllDrawers()"
-          style="border: none"
-        >
-          Cancelar
-        </button>
-        <button class="btn-primary" onclick="saveFlightEdit()">
-          Guardar Cambios
-        </button>
-      </div>
-    </div>
-
-    <div class="side-drawer" id="editDrawer">
-      <div class="drawer-header">
         <h3>Editar Evento</h3>
         <button
           class="btn-icon"
@@ -323,6 +261,43 @@
           Cancelar
         </button>
         <button class="btn-primary" onclick="saveFlightEdit()">
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+
+    <div class="side-drawer" id="editStandDrawer">
+      <div class="drawer-header">
+        <h3>Editar Stand</h3>
+        <button
+          class="btn-icon"
+          onclick="closeAllDrawers()"
+          style="border: none"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="drawer-content">
+        <input type="hidden" id="editStandInternalId" />
+
+        <div class="control-group">
+          <label>Nombre del Stand (Avión)</label>
+          <input type="text" id="editStandName" />
+        </div>
+        <div class="control-group">
+          <label>Color</label>
+          <input type="color" id="editStandColor" style="width: 50px" />
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <button
+          class="btn-icon"
+          onclick="closeAllDrawers()"
+          style="border: none"
+        >
+          Cancelar
+        </button>
+        <button class="btn-primary" onclick="saveStandEdit()">
           Guardar Cambios
         </button>
       </div>
