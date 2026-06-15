@@ -495,3 +495,83 @@ function renderTimeline() {
     rowsContainer.appendChild(rowEl);
   });
 }
+
+// === AUTOCOMPLETADO DE RUTAS (INTELIGENTE CON COLOR) ===
+
+// Extrae rutas únicas de los vuelos ya guardados en Firestore
+function getUniqueRoutes() {
+  const routes = {};
+  flightsData.forEach((f) => {
+    if (f.flightNum && f.org && f.dest) {
+      // Guardamos la ruta y también el color. Si no tiene, asignamos el azul por defecto.
+      routes[f.flightNum.toUpperCase()] = {
+        org: f.org,
+        dest: f.dest,
+        color: f.color || "#1a73e8",
+      };
+    }
+  });
+  return routes;
+}
+
+// Muestra las sugerencias mientras el usuario escribe
+function showSuggestions(value) {
+  const container = document.getElementById("routeSuggestions");
+  container.innerHTML = "";
+  const val = value.trim().toUpperCase();
+
+  if (!val) {
+    container.classList.remove("active");
+    return;
+  }
+
+  const routes = getUniqueRoutes();
+  const matches = Object.keys(routes).filter((id) => id.includes(val));
+
+  if (matches.length === 0) {
+    container.classList.remove("active");
+    return;
+  }
+
+  // Dibujar cada sugerencia
+  matches.forEach((id) => {
+    const item = document.createElement("div");
+    item.className = "suggestion-item";
+
+    // Añadimos un pequeño círculo visual con el color del vuelo en la sugerencia
+    item.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${routes[id].color};"></div>
+        <span class="suggestion-id">${id}</span>
+      </div>
+      <span>${routes[id].org} → ${routes[id].dest}</span>
+    `;
+
+    // Al hacer clic, autocompletar TODO (incluido el color)
+    item.onclick = () => {
+      document.getElementById("flightId").value = id;
+      document.getElementById("origin").value = routes[id].org;
+      document.getElementById("destination").value = routes[id].dest;
+
+      // === NUEVO: Autocompletar el color ===
+      document.getElementById("flightColor").value = routes[id].color;
+
+      container.classList.remove("active");
+    };
+
+    container.appendChild(item);
+  });
+
+  container.classList.add("active");
+}
+
+// Cerrar sugerencias al hacer clic fuera
+document.addEventListener("click", (e) => {
+  if (
+    !e.target.closest("#flightId") &&
+    !e.target.closest("#routeSuggestions")
+  ) {
+    const container = document.getElementById("routeSuggestions");
+    if (container) container.classList.remove("active");
+  }
+});

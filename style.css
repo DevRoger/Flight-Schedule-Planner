@@ -620,3 +620,49 @@ body.dark-mode .action-stand {
   gap: 12px;
   background: var(--row-bg-alt);
 }
+
+/* === AUTOCOMPLETADO DE RUTAS (Sugerencias) === */
+.suggestions-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: max-content;
+  min-width: 160px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 6px;
+  z-index: 1000;
+  overflow: hidden;
+  display: none;
+}
+
+.suggestions-container.active {
+  display: block;
+}
+
+.suggestion-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-main);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color 0.2s;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background-color: var(--row-bg-alt);
+}
+
+.suggestion-id {
+  font-weight: 700;
+  color: var(--primary);
+}
