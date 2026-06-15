@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flight Schedule Planner Pro</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="controls card">
+      <div class="control-group">
+        <label>Nuevo Stand</label>
+        <div style="display: flex; gap: 5px">
+          <input
+            type="text"
+            id="newStandName"
+            placeholder="Nombre (Ej. Puerta 1)"
+          />
+          <input
+            type="color"
+            id="standColor"
+            value="#e8f0fe"
+            title="Color del Stand"
+          />
+        </div>
+        <button onclick="addStand()" class="btn-primary">Añadir Stand</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="control-group">
+        <label>ID y Ruta</label>
+        <div style="display: flex; gap: 5px">
+          <input
+            type="text"
+            id="flightId"
+            placeholder="Ej: IB123"
+            style="width: 80px"
+          />
+          <select id="origin"></select>
+          <select id="destination"></select>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Salida</label>
+        <div style="display: flex; gap: 5px">
+          <input type="date" id="depDate" />
+          <input type="time" id="depTime" />
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Llegada</label>
+        <div style="display: flex; gap: 5px">
+          <input type="date" id="arrDate" />
+          <input type="time" id="arrTime" />
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Asignación</label>
+        <select id="standSelect"></select>
+        <button onclick="addFlight()" class="btn-success">
+          Programar Vuelo
+        </button>
+      </div>
+    </div>
+
+    <div class="timeline-controls card">
+      <button onclick="changeViewDay(-1)" class="btn-icon">
+        ◀ Día Anterior
+      </button>
+      <input
+        type="date"
+        id="currentViewDate"
+        onchange="renderTimeline()"
+        class="date-display"
+      />
+      <button onclick="changeViewDay(1)" class="btn-icon">
+        Día Siguiente ▶
+      </button>
+    </div>
+
+    <div class="planner-wrapper card">
+      <div class="sidebar" id="sidebar"></div>
+      <div class="timeline-container">
+        <div id="timelineScrollArea" class="timeline-scroll">
+          <div class="time-header" id="timeHeader"></div>
+          <div id="rowsContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

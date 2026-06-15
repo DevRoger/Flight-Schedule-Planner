@@ -1,0 +1,297 @@
+:root {
+  --primary: #1a73e8;
+  --primary-hover: #1557b0;
+  --success: #1e8e3e;
+  --success-hover: #177133;
+  --background: #f8f9fa;
+  --surface: #ffffff;
+  --border: #dadce0;
+  --text-main: #202124;
+  --text-sec: #5f6368;
+  --sidebar-width: 220px;
+  --header-height: 40px;
+}
+
+body {
+  font-family: "Roboto", sans-serif;
+  background-color: var(--background);
+  color: var(--text-main);
+  margin: 20px auto;
+  max-width: 1600px;
+  padding: 0 20px;
+}
+
+/* Material Cards */
+.card {
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px 0 rgba(60, 64, 67, 0.3),
+    0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  margin-bottom: 20px;
+}
+
+/* Controls Container */
+.controls {
+  padding: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sec);
+}
+
+.divider {
+  width: 1px;
+  height: 60px;
+  background-color: var(--border);
+  margin: 0 10px;
+}
+
+/* Inputs & Buttons */
+input,
+select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--primary);
+  border-width: 2px;
+  padding: 9px 11px;
+}
+
+input[type="color"] {
+  padding: 2px;
+  width: 40px;
+  cursor: pointer;
+}
+
+button {
+  font-family: "Roboto", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+.btn-success:hover {
+  background: var(--success-hover);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.btn-icon {
+  background: transparent;
+  color: var(--text-sec);
+  border: 1px solid var(--border);
+}
+.btn-icon:hover {
+  background: #f1f3f4;
+  color: var(--text-main);
+}
+
+/* Timeline Controls */
+.timeline-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+}
+
+.date-display {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  border: none !important;
+  background: transparent;
+  text-align: center;
+}
+
+/* Planner Grid */
+.planner-wrapper {
+  display: flex;
+  overflow: hidden;
+  height: 600px;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  padding-top: var(--header-height);
+  overflow-y: auto;
+}
+
+.sidebar-item {
+  height: 80px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-weight: 500;
+  color: var(--text-main);
+  /* Transición suave por si cambias colores luego */
+  transition: background-color 0.3s;
+}
+
+.delete-stand {
+  background: rgba(218, 220, 224, 0.5);
+  color: var(--text-sec);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.delete-stand:hover {
+  background: #ea4335;
+  color: white;
+}
+
+.timeline-container {
+  flex-grow: 1;
+  overflow-x: auto;
+  position: relative;
+  background: #fafafa;
+}
+
+.timeline-scroll {
+  width: 2880px; /* 120px por hora para mayor claridad */
+}
+
+.time-header {
+  display: flex;
+  height: var(--header-height);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.time-slot {
+  flex: 1;
+  border-right: 1px solid #e8eaed;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sec);
+  text-align: center;
+  padding-top: 12px;
+}
+
+.row {
+  height: 80px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 119px,
+    #f1f3f4 119px,
+    #f1f3f4 120px
+  );
+}
+
+/* Bloques de Vuelo */
+.flight-block {
+  position: absolute;
+  top: 12px;
+  height: 56px;
+  background: var(--primary);
+  color: white;
+  /* Aumentamos el padding derecho a 28px para dejar hueco permanente al botón */
+  padding: 6px 28px 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  z-index: 2;
+  transition: filter 0.2s;
+}
+
+.flight-block:hover {
+  filter: brightness(1.05);
+}
+
+.flight-block strong {
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+/* Botón de Eliminar */
+.del-flight {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border: none;
+  color: white;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  /* Usamos flexbox para centrar la "×" perfectamente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  /* Transición suave de opacidad en lugar de display: none */
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
+}
+
+.flight-block:hover .del-flight {
+  opacity: 1;
+}
+
+.del-flight:hover {
+  background: #ea4335;
+}
