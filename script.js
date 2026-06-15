@@ -164,21 +164,71 @@ function saveStandEdit() {
     .catch((err) => alert("Error al actualizar: " + err));
 }
 
+// === LÓGICA DE PESTAÑAS Y TIPOS DE EVENTO ===
+let currentEventType = "flight"; // Por defecto
+
+function setEventType(type) {
+  currentEventType = type;
+
+  // Actualizar UI de pestañas
+  document
+    .querySelectorAll(".tab-btn")
+    .forEach((btn) => btn.classList.remove("active"));
+  document.getElementById("tab-" + type).classList.add("active");
+
+  // Alternar campos del formulario
+  const routeContainer = document.getElementById("routeContainer");
+  const idLabel = document.getElementById("idLabel");
+  const colorInput = document.getElementById("flightColor");
+  const flightIdInput = document.getElementById("flightId");
+  const submitBtn = document.getElementById("submitBtnText");
+  const idInputWrapper = document.getElementById("idInputWrapper"); // <-- NUEVO
+
+  if (type === "flight") {
+    routeContainer.style.display = "flex";
+    idInputWrapper.style.width = "120px"; // <-- Vuelve a ser pequeño
+    idLabel.innerText = "ID, Ruta y Color";
+    colorInput.value = "#0b57d0";
+    flightIdInput.placeholder = "Ej: IB123";
+    submitBtn.innerText = "Programar Vuelo";
+  } else if (type === "maintenance") {
+    routeContainer.style.display = "none";
+    idInputWrapper.style.width = "280px"; // <-- Se expande para texto largo
+    idLabel.innerText = "Tarea de Mantenimiento y Color";
+    colorInput.value = "#ea8600";
+    flightIdInput.placeholder = "Ej: Rev. Motor A";
+    submitBtn.innerText = "Fijar Mantenimiento";
+  } else if (type === "backup") {
+    routeContainer.style.display = "none";
+    idInputWrapper.style.width = "280px"; // <-- Se expande para texto largo
+    idLabel.innerText = "Motivo de Reserva y Color";
+    colorInput.value = "#5f6368";
+    flightIdInput.placeholder = "Ej: A320 Standby";
+    submitBtn.innerText = "Asignar Backup";
+  }
+}
+
 // === GESTIÓN DE VUELOS EN FIRESTORE ===
 function addFlight() {
-  const fields = [
-    "flightId",
-    "origin",
-    "destination",
-    "depDate",
-    "depTime",
-    "arrDate",
-    "arrTime",
-    "standSelect",
-    "flightColor",
-  ];
-  const data = {};
-  fields.forEach((f) => (data[f] = document.getElementById(f).value));
+  const data = {
+    flightId: document.getElementById("flightId").value,
+    depDate: document.getElementById("depDate").value,
+    depTime: document.getElementById("depTime").value,
+    arrDate: document.getElementById("arrDate").value,
+    arrTime: document.getElementById("arrTime").value,
+    standSelect: document.getElementById("standSelect").value,
+    flightColor: document.getElementById("flightColor").value,
+    // La ruta solo se captura si estamos en la pestaña Vuelo
+    origin:
+      currentEventType === "flight"
+        ? document.getElementById("origin").value
+        : "",
+    destination:
+      currentEventType === "flight"
+        ? document.getElementById("destination").value
+        : "",
+    type: currentEventType, // GUARDAMOS EL TIPO EN FIREBASE
+  };
 
   if (
     !data.flightId ||
@@ -188,7 +238,7 @@ function addFlight() {
     !data.arrTime ||
     !data.standSelect
   )
-    return alert("Completa los datos.");
+    return alert("Completa los datos principales.");
 
   const departure = new Date(`${data.depDate}T${data.depTime}`);
   const arrival = new Date(`${data.arrDate}T${data.arrTime}`);
@@ -201,7 +251,7 @@ function addFlight() {
       departure < f.arrivalObj &&
       arrival > f.departureObj,
   );
-  if (hasOverlap) return alert("¡Conflicto! Stand ocupado.");
+  if (hasOverlap) return alert("¡Conflicto! Stand ocupado en ese horario.");
 
   db.collection("flights")
     .add({
@@ -214,21 +264,18 @@ function addFlight() {
       arrTime: data.arrTime,
       standId: data.standSelect,
       color: data.flightColor,
+      type: data.type, // Nuevo campo
       departureObj: firebase.firestore.Timestamp.fromDate(departure),
       arrivalObj: firebase.firestore.Timestamp.fromDate(arrival),
     })
     .then(() => {
+      // Reseteo inteligente
       document.getElementById("flightId").value = "";
       document.getElementById("depTime").value = "";
       document.getElementById("arrTime").value = "";
-      document.getElementById("flightColor").value = "#1a73e8";
 
-      const currentViewDate = document.getElementById("currentViewDate").value;
-      document.getElementById("depDate").value = currentViewDate;
-      document.getElementById("arrDate").value = currentViewDate;
-
-      document.getElementById("origin").selectedIndex = 0;
-      document.getElementById("destination").selectedIndex = 0;
+      // Devolver el color por defecto según la pestaña activa
+      setEventType(currentEventType);
     })
     .catch((err) => alert("Error al guardar: " + err));
 }
@@ -243,6 +290,25 @@ function openEditDrawer(flightId) {
   const flight = flightsData.find((f) => f.id === flightId);
   if (!flight) return;
 
+  // 1. Identificar tipo de evento y adaptar la interfaz del menú
+  const eventType = flight.type || "flight";
+  document.getElementById("editEventType").value = eventType;
+
+  const editRouteContainer = document.getElementById("editRouteContainer");
+  const editIdLabel = document.getElementById("editIdLabel");
+
+  if (eventType === "flight") {
+    editRouteContainer.style.display = "flex";
+    editIdLabel.innerText = "ID, Ruta y Color";
+  } else if (eventType === "maintenance") {
+    editRouteContainer.style.display = "none";
+    editIdLabel.innerText = "Tarea de Mantenimiento y Color";
+  } else if (eventType === "backup") {
+    editRouteContainer.style.display = "none";
+    editIdLabel.innerText = "Motivo de Reserva y Color";
+  }
+
+  // 2. Cargar datos en los inputs
   const mapping = {
     editFlightInternalId: "id",
     editFlightId: "flightNum",
@@ -255,9 +321,11 @@ function openEditDrawer(flightId) {
     editStandSelect: "standId",
     editFlightColor: "color",
   };
-  for (const elId in mapping)
+
+  for (const elId in mapping) {
     document.getElementById(elId).value =
       flight[mapping[elId]] || (elId === "editFlightColor" ? "#1a73e8" : "");
+  }
 
   document.getElementById("drawerOverlay").classList.add("active");
   document.getElementById("editDrawer").classList.add("active");
@@ -279,6 +347,11 @@ function saveFlightEdit() {
   const data = {};
   fields.forEach((f) => (data[f] = document.getElementById(f).value));
 
+  // Saber de qué tipo es el evento para no borrar/guardar rutas equivocadas
+  const eventType = document.getElementById("editEventType").value;
+  const origin = eventType === "flight" ? data.editOrigin : "";
+  const destination = eventType === "flight" ? data.editDestination : "";
+
   const departure = new Date(`${data.editDepDate}T${data.editDepTime}`);
   const arrival = new Date(`${data.editArrDate}T${data.editArrTime}`);
 
@@ -291,14 +364,15 @@ function saveFlightEdit() {
       departure < f.arrivalObj &&
       arrival > f.departureObj,
   );
-  if (hasOverlap) return alert("¡Conflicto con otro vuelo!");
+  if (hasOverlap) return alert("¡Conflicto con otro evento en ese Stand!");
 
+  // Guardar cambios en Firestore
   db.collection("flights")
     .doc(data.editFlightInternalId)
     .update({
       flightNum: data.editFlightId,
-      org: data.editOrigin,
-      dest: data.editDestination,
+      org: origin, // Ruta filtrada por tipo
+      dest: destination, // Ruta filtrada por tipo
       depDate: data.editDepDate,
       depTime: data.editDepTime,
       arrDate: data.editArrDate,
@@ -470,6 +544,12 @@ function renderTimeline() {
       flightBlock.style.backgroundColor = bgColor;
       flightBlock.style.color = getContrastColor(bgColor);
 
+      // Aplicar texturas visuales CSS según el tipo de evento
+      const eventType = flight.type || "flight"; // Por si hay vuelos antiguos
+      if (eventType === "maintenance")
+        flightBlock.classList.add("type-maintenance");
+      if (eventType === "backup") flightBlock.classList.add("type-backup");
+
       flightBlock.onclick = () => openEditDrawer(flight.id);
 
       flightBlock.addEventListener("dragstart", (e) => {
@@ -483,12 +563,26 @@ function renderTimeline() {
 
       const timeT = `${flight.departureObj < viewStart ? "◀ ... " : flight.depTime} - ${flight.arrivalObj > viewEnd ? " ... ▶" : flight.arrTime}`;
 
+      // Configurar el contenido interno según el tipo
+      let icon = "";
+      let routeHtml = "";
+
+      if (eventType === "maintenance") {
+        icon = "⚙️ ";
+        // En mantenimiento no mostramos origen/destino
+      } else if (eventType === "backup") {
+        icon = "🛡️ ";
+        // En backup tampoco mostramos origen/destino
+      } else {
+        routeHtml = `<span>${flight.org} → ${flight.dest}</span>`;
+      }
+
       flightBlock.innerHTML = `
-                <strong>${flight.flightNum}</strong>
-                <span>${flight.org} → ${flight.dest}</span>
-                <span>${timeT}</span>
-                <button class="del-flight" onclick="event.stopPropagation(); deleteFlight('${flight.id}')">×</button>
-            `;
+          <strong>${icon}${flight.flightNum}</strong>
+          ${routeHtml}
+          <span>${timeT}</span>
+          <button class="del-flight" onclick="event.stopPropagation(); deleteFlight('${flight.id}')">×</button>
+      `;
       rowEl.appendChild(flightBlock);
     });
 
