@@ -128,14 +128,14 @@
       </div>
     </div>
 
-    <div class="overlay" id="drawerOverlay" onclick="closeEditDrawer()"></div>
+    <div class="overlay" id="drawerOverlay" onclick="closeAllDrawers()"></div>
 
     <div class="side-drawer" id="editDrawer">
       <div class="drawer-header">
         <h3>Editar Vuelo</h3>
         <button
           class="btn-icon"
-          onclick="closeEditDrawer()"
+          onclick="closeAllDrawers()"
           style="border: none"
         >
           ✕
@@ -181,12 +181,49 @@
       <div class="drawer-footer">
         <button
           class="btn-icon"
-          onclick="closeEditDrawer()"
+          onclick="closeAllDrawers()"
           style="border: none"
         >
           Cancelar
         </button>
         <button class="btn-primary" onclick="saveFlightEdit()">
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+
+    <div class="side-drawer" id="editStandDrawer">
+      <div class="drawer-header">
+        <h3>Editar Stand</h3>
+        <button
+          class="btn-icon"
+          onclick="closeAllDrawers()"
+          style="border: none"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="drawer-content">
+        <input type="hidden" id="editStandInternalId" />
+
+        <div class="control-group">
+          <label>Nombre del Stand (Avión)</label>
+          <input type="text" id="editStandName" />
+        </div>
+        <div class="control-group">
+          <label>Color</label>
+          <input type="color" id="editStandColor" style="width: 50px" />
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <button
+          class="btn-icon"
+          onclick="closeAllDrawers()"
+          style="border: none"
+        >
+          Cancelar
+        </button>
+        <button class="btn-primary" onclick="saveStandEdit()">
           Guardar Cambios
         </button>
       </div>

@@ -21,13 +21,11 @@ const airports = ["BCN", "EZE", "BOG", "XPL", "UIO"];
 
 // === INICIALIZACIÓN DE LA APP ===
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. Cargar Tema
   if (localStorage.getItem("theme") === "dark") {
     document.body.classList.add("dark-mode");
     document.getElementById("themeToggle").checked = true;
   }
 
-  // 2. Rellenar selects
   const selects = ["origin", "destination", "editOrigin", "editDestination"];
   selects.forEach((id) => {
     const sel = document.getElementById(id);
@@ -36,19 +34,16 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
-  // 3. Renderizar Horas
   const header = document.getElementById("timeHeader");
   for (let i = 0; i < 24; i++) {
     header.innerHTML += `<div class="time-slot">${i.toString().padStart(2, "0")}:00</div>`;
   }
 
-  // 4. Fechas por defecto
   const today = new Date().toISOString().split("T")[0];
   const dateInputs = ["currentViewDate", "depDate", "arrDate"];
   dateInputs.forEach((id) => (document.getElementById(id).value = today));
 
   // === ESCUCHAS EN TIEMPO REAL (Firestore) ===
-
   db.collection("stands")
     .orderBy("order", "asc")
     .onSnapshot((snapshot) => {
@@ -139,6 +134,36 @@ function updateStandSelects() {
   });
 }
 
+// === NUEVO: EDICIÓN DE STANDS ===
+function openEditStandDrawer(standId) {
+  const stand = standsData.find((s) => s.id === standId);
+  if (!stand) return;
+
+  document.getElementById("editStandInternalId").value = stand.id;
+  document.getElementById("editStandName").value = stand.name;
+  document.getElementById("editStandColor").value = stand.color || "#e8f0fe";
+
+  document.getElementById("drawerOverlay").classList.add("active");
+  document.getElementById("editStandDrawer").classList.add("active");
+}
+
+function saveStandEdit() {
+  const id = document.getElementById("editStandInternalId").value;
+  const name = document.getElementById("editStandName").value.trim();
+  const color = document.getElementById("editStandColor").value;
+
+  if (!name) return alert("El nombre del stand no puede estar vacío.");
+
+  db.collection("stands")
+    .doc(id)
+    .update({
+      name: name,
+      color: color,
+    })
+    .then(() => closeAllDrawers())
+    .catch((err) => alert("Error al actualizar: " + err));
+}
+
 // === GESTIÓN DE VUELOS EN FIRESTORE ===
 function addFlight() {
   const fields = [
@@ -193,13 +218,11 @@ function addFlight() {
       arrivalObj: firebase.firestore.Timestamp.fromDate(arrival),
     })
     .then(() => {
-      // === NUEVO: RESETEO DE INPUTS ===
       document.getElementById("flightId").value = "";
       document.getElementById("depTime").value = "";
       document.getElementById("arrTime").value = "";
       document.getElementById("flightColor").value = "#1a73e8";
 
-      // Restaurar fechas al día actual de visualización
       const currentViewDate = document.getElementById("currentViewDate").value;
       document.getElementById("depDate").value = currentViewDate;
       document.getElementById("arrDate").value = currentViewDate;
@@ -215,7 +238,7 @@ function deleteFlight(flightId) {
     db.collection("flights").doc(flightId).delete();
 }
 
-// === EDICIÓN ===
+// === EDICIÓN DE VUELOS ===
 function openEditDrawer(flightId) {
   const flight = flightsData.find((f) => f.id === flightId);
   if (!flight) return;
@@ -238,11 +261,6 @@ function openEditDrawer(flightId) {
 
   document.getElementById("drawerOverlay").classList.add("active");
   document.getElementById("editDrawer").classList.add("active");
-}
-
-function closeEditDrawer() {
-  document.getElementById("drawerOverlay").classList.remove("active");
-  document.getElementById("editDrawer").classList.remove("active");
 }
 
 function saveFlightEdit() {
@@ -290,7 +308,14 @@ function saveFlightEdit() {
       departureObj: firebase.firestore.Timestamp.fromDate(departure),
       arrivalObj: firebase.firestore.Timestamp.fromDate(arrival),
     })
-    .then(() => closeEditDrawer());
+    .then(() => closeAllDrawers());
+}
+
+// === CIERRE DE PANELES GLOBAL ===
+function closeAllDrawers() {
+  document.getElementById("drawerOverlay").classList.remove("active");
+  document.getElementById("editDrawer").classList.remove("active");
+  document.getElementById("editStandDrawer").classList.remove("active");
 }
 
 // === CONTROL DE VISTAS ===
@@ -320,16 +345,26 @@ function renderTimeline() {
   let draggedStandId = null;
 
   standsData.forEach((stand) => {
-    // 1. RENDERIZAR SIDEBAR ITEM (DRAG SOURCE DE STANDS)
+    // 1. RENDERIZAR SIDEBAR ITEM
     const standEl = document.createElement("div");
     standEl.className = "sidebar-item";
     standEl.style.backgroundColor = stand.color;
+
+    // === NUEVO: CONTRASTE DINÁMICO EN EL TEXTO DEL STAND ===
+    const standTextColor = getContrastColor(stand.color);
+    standEl.style.color = standTextColor;
+
     standEl.draggable = true;
     standEl.dataset.id = stand.id;
 
+    // Se han implementado botones unificados ("✎" para editar y "×" para borrar)
+    // El color "inherit" hace que copien el color contrastado dinámico
     standEl.innerHTML = `
             <span>${stand.name}</span>
-            <button class="delete-stand" onclick="deleteStand('${stand.id}')">×</button>
+            <div class="stand-actions">
+              <button class="action-stand edit-stand" onclick="openEditStandDrawer('${stand.id}')" style="color: inherit;">✎</button>
+              <button class="action-stand delete-stand" onclick="deleteStand('${stand.id}')" style="color: inherit;">×</button>
+            </div>
         `;
 
     standEl.addEventListener("dragstart", (e) => {
@@ -375,7 +410,7 @@ function renderTimeline() {
 
     sidebar.appendChild(standEl);
 
-    // 2. RENDERIZAR FILA DEL TIMELINE (DROP ZONE DE VUELOS)
+    // 2. RENDERIZAR FILA DEL TIMELINE
     const rowEl = document.createElement("div");
     rowEl.className = "row";
     rowEl.dataset.standId = stand.id;

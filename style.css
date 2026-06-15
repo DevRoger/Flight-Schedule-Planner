@@ -407,25 +407,42 @@ body.dark-mode .sidebar-item:hover {
   border-top: 3px solid var(--primary);
 }
 
-.delete-stand {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--text-sec);
+/* === ACCIONES DE STAND (Editar / Eliminar) === */
+.stand-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.action-stand {
+  background: rgba(0, 0, 0, 0.1); /* Ligeramente más visible para contrastar */
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-body.dark-mode .delete-stand {
-  background: rgba(255, 255, 255, 0.1);
+
+body.dark-mode .action-stand {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Efectos al pasar el ratón */
+.edit-stand:hover {
+  background-color: var(--primary) !important;
+  color: white !important;
 }
 .delete-stand:hover {
   background-color: #ba1a1a !important;
-  color: white;
+  color: white !important;
 }
+
+/* === TIMELINE === */
 
 .timeline-container {
   flex-grow: 1;
