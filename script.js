@@ -1,35 +1,109 @@
-// Bases de datos en memoria
-let standsData = []; // [{ id: 'stand_1', name: 'Puerta 1', color: '#ff0000' }]
-let flightsData = []; // [{ id: '1', flightNum: 'IB123', org: 'BCN', dest: 'MAD', depDate: '...', depTime: '...', arrDate: '...', arrTime: '...', standId: 'stand_1' }]
+// CONFIGURACIÓN DE FIREBASE (Copia tus credenciales reales aquí)
+const firebaseConfig = {
+  apiKey: "AIzaSyCJ4zqkQi5SAvyiheb9IzR1v_goGNCeZa0",
+  authDomain: "aeroschedule-f367b.firebaseapp.com",
+  projectId: "aeroschedule-f367b",
+  storageBucket: "aeroschedule-f367b.firebasestorage.app",
+  messagingSenderId: "1093597461614",
+  appId: "1:1093597461614:web:c15bd3d9261d920c05ba7f",
+  measurementId: "G-B06BJYJM0V",
+};
+
+// Inicializar Firebase y Firestore
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Listas locales sincronizadas con la nube
+let standsData = [];
+let flightsData = [];
 
 const airports = ["BCN", "EZE", "BOG", "XPL", "UIO"];
 
-// Inicialización
+// Inicialización de la UI y de las escuchas en tiempo real
 document.addEventListener("DOMContentLoaded", () => {
-  // Rellenar selectores de aeropuertos
+  // Cargar Modo Oscuro desde LocalStorage
+  if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark-mode");
+    document.getElementById("themeToggle").checked = true;
+  }
+
   const orgSel = document.getElementById("origin");
   const destSel = document.getElementById("destination");
+  const editOrgSel = document.getElementById("editOrigin");
+  const editDestSel = document.getElementById("editDestination");
+
   airports.forEach((ap) => {
     orgSel.innerHTML += `<option value="${ap}">${ap}</option>`;
     destSel.innerHTML += `<option value="${ap}">${ap}</option>`;
+    editOrgSel.innerHTML += `<option value="${ap}">${ap}</option>`;
+    editDestSel.innerHTML += `<option value="${ap}">${ap}</option>`;
   });
 
-  // Renderizar cabecera de horas (24h)
   const header = document.getElementById("timeHeader");
   for (let i = 0; i < 24; i++) {
     header.innerHTML += `<div class="time-slot">${i.toString().padStart(2, "0")}:00</div>`;
   }
 
-  // Configurar fecha actual por defecto en los inputs y en el visualizador
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("currentViewDate").value = today;
   document.getElementById("depDate").value = today;
   document.getElementById("arrDate").value = today;
 
-  renderTimeline();
+  // --- ESCUCHAS EN TIEMPO REAL DESDE FIRESTORE ---
+
+  // 1. Sincronizar Stands
+  db.collection("stands").onSnapshot((snapshot) => {
+    standsData = [];
+    snapshot.forEach((doc) => {
+      standsData.push({ id: doc.id, ...doc.data() });
+    });
+    updateStandSelects();
+    renderTimeline(); // Redibujar al cambiar stands
+  });
+
+  // 2. Sincronizar Vuelos
+  db.collection("flights").onSnapshot((snapshot) => {
+    flightsData = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      flightsData.push({
+        id: doc.id,
+        ...data,
+        // Al recuperar de Firestore, los objetos Date se convierten en Timestamps.
+        // Los transformamos de nuevo a Date nativo de JS con .toDate()
+        departureObj: data.departureObj ? data.departureObj.toDate() : null,
+        arrivalObj: data.arrivalObj ? data.arrivalObj.toDate() : null,
+      });
+    });
+    renderTimeline(); // Redibujar al cambiar vuelos
+  });
 });
 
-// --- GESTIÓN DE STANDS ---
+// --- TEMA Y CONTRASTE ---
+
+function toggleTheme() {
+  const isDark = document.getElementById("themeToggle").checked;
+  if (isDark) {
+    document.body.classList.add("dark-mode");
+    localStorage.setItem("theme", "dark");
+  } else {
+    document.body.classList.remove("dark-mode");
+    localStorage.setItem("theme", "light");
+  }
+}
+
+// Algoritmo YIQ para determinar el color del texto basado en el fondo
+function getContrastColor(hexcolor) {
+  if (!hexcolor) return "#ffffff"; // Default blanco
+  hexcolor = hexcolor.replace("#", "");
+  const r = parseInt(hexcolor.substr(0, 2), 16);
+  const g = parseInt(hexcolor.substr(2, 2), 16);
+  const b = parseInt(hexcolor.substr(4, 2), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#202124" : "#ffffff"; // Oscuro si el fondo es claro, Blanco si es oscuro
+}
+
+// --- GESTIÓN DE STANDS EN FIRESTORE ---
 
 function addStand() {
   const nameInput = document.getElementById("newStandName");
@@ -38,35 +112,44 @@ function addStand() {
 
   if (!name) return;
 
-  const newStand = {
-    id: "stand_" + Date.now(),
-    name: name,
-    color: colorInput.value,
-  };
-
-  standsData.push(newStand);
-  nameInput.value = "";
-  updateStandSelects();
-  renderTimeline();
+  // Guardamos directamente en la colección de Firestore
+  db.collection("stands")
+    .add({
+      name: name,
+      color: colorInput.value,
+    })
+    .then(() => {
+      nameInput.value = "";
+    })
+    .catch((err) => alert("Error al guardar stand: " + err));
 }
 
 function deleteStand(standId) {
-  standsData = standsData.filter((s) => s.id !== standId);
-  // Opcional: Eliminar los vuelos asociados a ese stand
-  flightsData = flightsData.filter((f) => f.standId !== standId);
-  updateStandSelects();
-  renderTimeline();
+  // 1. Eliminar el documento del Stand
+  db.collection("stands").doc(standId).delete();
+
+  // 2. Limpiar en cascada los vuelos que estaban asignados a ese stand
+  flightsData.forEach((f) => {
+    if (f.standId === standId) {
+      db.collection("flights").doc(f.id).delete();
+    }
+  });
 }
 
 function updateStandSelects() {
   const sel = document.getElementById("standSelect");
+  const editSel = document.getElementById("editStandSelect");
   sel.innerHTML = "";
+  editSel.innerHTML = "";
+
   standsData.forEach((s) => {
-    sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+    const option = `<option value="${s.id}">${s.name}</option>`;
+    sel.innerHTML += option;
+    editSel.innerHTML += option;
   });
 }
 
-// --- GESTIÓN DE VUELOS ---
+// --- GESTIÓN DE VUELOS EN FIRESTORE ---
 
 function addFlight() {
   const flightNum = document.getElementById("flightId").value;
@@ -77,6 +160,7 @@ function addFlight() {
   const arrDate = document.getElementById("arrDate").value;
   const arrTime = document.getElementById("arrTime").value;
   const standId = document.getElementById("standSelect").value;
+  const color = document.getElementById("flightColor").value; // NUEVO
 
   if (!flightNum || !depDate || !depTime || !arrDate || !arrTime || !standId) {
     return alert("Por favor, completa todos los datos del vuelo.");
@@ -85,27 +169,19 @@ function addFlight() {
   const departure = new Date(`${depDate}T${depTime}`);
   const arrival = new Date(`${arrDate}T${arrTime}`);
 
-  if (arrival <= departure) {
-    return alert("La fecha/hora de llegada debe ser posterior a la de salida.");
-  }
+  if (arrival <= departure)
+    return alert("La llegada debe ser posterior a la salida.");
 
-  // --- DETECCIÓN DE SOLAPAMIENTOS ---
   const hasOverlap = flightsData.some((f) => {
-    // Solo comprobamos colisiones en el mismo Stand
     if (f.standId !== standId) return false;
-
-    // Lógica de colisión (AABB): Inicio1 < Fin2 Y Fin1 > Inicio2
     return departure < f.arrivalObj && arrival > f.departureObj;
   });
 
-  if (hasOverlap) {
-    return alert(
-      "¡Conflicto! Ya existe un vuelo programado en este stand que se solapa con este horario.",
-    );
-  }
+  if (hasOverlap)
+    return alert("¡Conflicto! El stand ya está ocupado en ese horario.");
 
-  const newFlight = {
-    id: "flight_" + Date.now(),
+  // GUARDAR EN FIRESTORE
+  db.collection("flights").add({
     flightNum,
     org,
     dest,
@@ -114,17 +190,87 @@ function addFlight() {
     arrDate,
     arrTime,
     standId,
-    departureObj: departure,
-    arrivalObj: arrival,
-  };
-
-  flightsData.push(newFlight);
-  renderTimeline();
+    color, // GUARDAMOS COLOR
+    departureObj: firebase.firestore.Timestamp.fromDate(departure),
+    arrivalObj: firebase.firestore.Timestamp.fromDate(arrival),
+  });
 }
 
 function deleteFlight(flightId) {
-  flightsData = flightsData.filter((f) => f.id !== flightId);
-  renderTimeline();
+  db.collection("flights").doc(flightId).delete();
+}
+
+// --- MENÚ LATERAL DE EDICIÓN ---
+
+function openEditDrawer(flightId) {
+  const flight = flightsData.find((f) => f.id === flightId);
+  if (!flight) return;
+
+  document.getElementById("editFlightInternalId").value = flight.id;
+  document.getElementById("editFlightId").value = flight.flightNum;
+  document.getElementById("editOrigin").value = flight.org;
+  document.getElementById("editDestination").value = flight.dest;
+  document.getElementById("editDepDate").value = flight.depDate;
+  document.getElementById("editDepTime").value = flight.depTime;
+  document.getElementById("editArrDate").value = flight.arrDate;
+  document.getElementById("editArrTime").value = flight.arrTime;
+  document.getElementById("editStandSelect").value = flight.standId;
+  document.getElementById("editFlightColor").value = flight.color || "#1a73e8";
+
+  document.getElementById("drawerOverlay").classList.add("active");
+  document.getElementById("editDrawer").classList.add("active");
+}
+
+function closeEditDrawer() {
+  document.getElementById("drawerOverlay").classList.remove("active");
+  document.getElementById("editDrawer").classList.remove("active");
+}
+
+function saveFlightEdit() {
+  const id = document.getElementById("editFlightInternalId").value;
+  const flightNum = document.getElementById("editFlightId").value;
+  const org = document.getElementById("editOrigin").value;
+  const dest = document.getElementById("editDestination").value;
+  const depDate = document.getElementById("editDepDate").value;
+  const depTime = document.getElementById("editDepTime").value;
+  const arrDate = document.getElementById("editArrDate").value;
+  const arrTime = document.getElementById("editArrTime").value;
+  const standId = document.getElementById("editStandSelect").value;
+  const color = document.getElementById("editFlightColor").value; // NUEVO
+
+  const departure = new Date(`${depDate}T${depTime}`);
+  const arrival = new Date(`${arrDate}T${arrTime}`);
+
+  if (arrival <= departure)
+    return alert("La llegada debe ser posterior a la salida.");
+
+  const hasOverlap = flightsData.some((f) => {
+    if (f.id === id) return false;
+    if (f.standId !== standId) return false;
+    return departure < f.arrivalObj && arrival > f.departureObj;
+  });
+
+  if (hasOverlap)
+    return alert("¡Conflicto! La nueva configuración choca con otro vuelo.");
+
+  db.collection("flights")
+    .doc(id)
+    .update({
+      flightNum,
+      org,
+      dest,
+      depDate,
+      depTime,
+      arrDate,
+      arrTime,
+      standId,
+      color, // ACTUALIZAMOS COLOR
+      departureObj: firebase.firestore.Timestamp.fromDate(departure),
+      arrivalObj: firebase.firestore.Timestamp.fromDate(arrival),
+    })
+    .then(() => {
+      closeEditDrawer();
+    });
 }
 
 // --- CONTROL DE VISTAS Y RENDERIZADO ---
@@ -135,22 +281,13 @@ function changeViewDay(offset) {
   currentDate.setDate(currentDate.getDate() + offset);
   dateInput.value = currentDate.toISOString().split("T")[0];
 
-  // Primero renderizamos la nueva vista
   renderTimeline();
 
-  // --- NUEVA LÓGICA DE SCROLL ---
-  // Seleccionamos el contenedor que tiene el overflow-x
   const timelineContainer = document.querySelector(".timeline-container");
-
-  if (offset === 1) {
-    // Si pasamos al Día Siguiente: Scroll al inicio del día (00:00)
-    timelineContainer.scrollLeft = 0;
-  } else if (offset === -1) {
-    // Si pasamos al Día Anterior: Scroll al final del día (23:59)
-    // Restamos el ancho visible (clientWidth) al ancho total (scrollWidth) para llegar justo al tope derecho
+  if (offset === 1) timelineContainer.scrollLeft = 0;
+  else if (offset === -1)
     timelineContainer.scrollLeft =
       timelineContainer.scrollWidth - timelineContainer.clientWidth;
-  }
 }
 
 function renderTimeline() {
@@ -165,7 +302,6 @@ function renderTimeline() {
   rowsContainer.innerHTML = "";
 
   standsData.forEach((stand) => {
-    // 1. Sidebar Stand
     const standEl = document.createElement("div");
     standEl.className = "sidebar-item";
     standEl.style.backgroundColor = stand.color;
@@ -175,33 +311,28 @@ function renderTimeline() {
         `;
     sidebar.appendChild(standEl);
 
-    // 2. Timeline Row (Ahora es una zona para soltar elementos)
     const rowEl = document.createElement("div");
     rowEl.className = "row";
     rowEl.dataset.standId = stand.id;
 
-    // Eventos Drag & Drop para la fila (Zona de destino)
+    // Drag & Drop
     rowEl.addEventListener("dragover", (e) => {
-      e.preventDefault(); // Necesario para permitir el "drop"
+      e.preventDefault();
       rowEl.classList.add("drag-over");
     });
-
     rowEl.addEventListener("dragleave", () => {
       rowEl.classList.remove("drag-over");
     });
-
     rowEl.addEventListener("drop", (e) => {
       e.preventDefault();
       rowEl.classList.remove("drag-over");
-
       const flightId = e.dataTransfer.getData("text/plain");
       const draggedFlight = flightsData.find((f) => f.id === flightId);
 
       if (!draggedFlight || draggedFlight.standId === stand.id) return;
 
-      // Verificamos solapamiento en el nuevo stand antes de moverlo
       const hasOverlap = flightsData.some((f) => {
-        if (f.id === draggedFlight.id) return false; // No comparamos con sí mismo
+        if (f.id === draggedFlight.id) return false;
         if (f.standId !== stand.id) return false;
         return (
           draggedFlight.departureObj < f.arrivalObj &&
@@ -209,22 +340,19 @@ function renderTimeline() {
         );
       });
 
-      if (hasOverlap) {
-        alert(
-          "No se puede mover el vuelo aquí: genera un conflicto de horarios.",
-        );
-        return;
-      }
+      if (hasOverlap)
+        return alert("Conflicto: No se puede mover el vuelo aquí.");
 
-      // Actualizamos el stand del vuelo arrastrado
-      draggedFlight.standId = stand.id;
-      renderTimeline();
+      // Al soltar el vuelo arrastrado, simplemente actualizamos su standId en Firestore
+      db.collection("flights").doc(draggedFlight.id).update({
+        standId: stand.id,
+      });
     });
 
-    // 3. Renderizar Vuelos
     const standFlights = flightsData.filter((f) => f.standId === stand.id);
 
     standFlights.forEach((flight) => {
+      if (!flight.arrivalObj || !flight.departureObj) return;
       if (flight.arrivalObj < viewStart || flight.departureObj > viewEnd)
         return;
 
@@ -245,11 +373,15 @@ function renderTimeline() {
       flightBlock.className = "flight-block";
       flightBlock.style.left = `${leftPercent}%`;
       flightBlock.style.width = `${widthPercent}%`;
-
-      // Hacer el bloque arrastrable
       flightBlock.draggable = true;
 
-      // Eventos Drag & Drop para el bloque de vuelo
+      // APLICAR COLOR Y CONTRASTE
+      const bgColor = flight.color || "#1a73e8";
+      flightBlock.style.backgroundColor = bgColor;
+      flightBlock.style.color = getContrastColor(bgColor);
+
+      flightBlock.onclick = () => openEditDrawer(flight.id);
+
       flightBlock.addEventListener("dragstart", (e) => {
         e.dataTransfer.setData("text/plain", flight.id);
         setTimeout(() => flightBlock.classList.add("dragging"), 0);
@@ -269,7 +401,7 @@ function renderTimeline() {
                 <strong>${flight.flightNum}</strong>
                 <span>${flight.org} → ${flight.dest}</span>
                 <span>${timeText}</span>
-                <button class="del-flight" onclick="deleteFlight('${flight.id}')">×</button>
+                <button class="del-flight" onclick="event.stopPropagation(); deleteFlight('${flight.id}')">×</button>
             `;
 
       rowEl.appendChild(flightBlock);

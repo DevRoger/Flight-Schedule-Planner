@@ -11,6 +11,19 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <header class="app-header">
+      <div class="header-title">
+        <h1 style="margin: 0; font-size: 22px">Flight Schedule Planner</h1>
+      </div>
+      <div class="theme-switch-wrapper">
+        <span style="font-size: 14px; font-weight: 500">Modo Oscuro</span>
+        <label class="switch">
+          <input type="checkbox" id="themeToggle" onchange="toggleTheme()" />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </header>
+
     <div class="controls card">
       <div class="control-group">
         <label>Nuevo Stand</label>
@@ -33,7 +46,7 @@
       <div class="divider"></div>
 
       <div class="control-group">
-        <label>ID y Ruta</label>
+        <label>ID, Ruta y Color</label>
         <div style="display: flex; gap: 5px">
           <input
             type="text"
@@ -43,6 +56,12 @@
           />
           <select id="origin"></select>
           <select id="destination"></select>
+          <input
+            type="color"
+            id="flightColor"
+            value="#1a73e8"
+            title="Color del Vuelo"
+          />
         </div>
       </div>
 
@@ -96,6 +115,72 @@
       </div>
     </div>
 
+    <div class="overlay" id="drawerOverlay" onclick="closeEditDrawer()"></div>
+
+    <div class="side-drawer" id="editDrawer">
+      <div class="drawer-header">
+        <h3>Editar Vuelo</h3>
+        <button
+          class="btn-icon"
+          onclick="closeEditDrawer()"
+          style="border: none"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="drawer-content">
+        <input type="hidden" id="editFlightInternalId" />
+
+        <div class="control-group">
+          <label>ID y Color</label>
+          <div style="display: flex; gap: 10px">
+            <input type="text" id="editFlightId" style="flex: 1" />
+            <input type="color" id="editFlightColor" style="width: 50px" />
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Ruta</label>
+          <div style="display: flex; gap: 10px">
+            <select id="editOrigin" style="flex: 1"></select>
+            <span style="align-self: center">→</span>
+            <select id="editDestination" style="flex: 1"></select>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Salida</label>
+          <div style="display: flex; gap: 10px">
+            <input type="date" id="editDepDate" style="flex: 1" />
+            <input type="time" id="editDepTime" style="flex: 1" />
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Llegada</label>
+          <div style="display: flex; gap: 10px">
+            <input type="date" id="editArrDate" style="flex: 1" />
+            <input type="time" id="editArrTime" style="flex: 1" />
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Stand Asignado</label>
+          <select id="editStandSelect"></select>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <button
+          class="btn-icon"
+          onclick="closeEditDrawer()"
+          style="border: none"
+        >
+          Cancelar
+        </button>
+        <button class="btn-primary" onclick="saveFlightEdit()">
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
