@@ -513,9 +513,22 @@ body.dark-mode .action-stand {
     box-shadow 0.15s;
   cursor: pointer;
 }
+
 .flight-block:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+}
+
+/* === MICRO EVENTOS (NUEVO) === */
+.flight-block.micro-event {
+  padding: 0 !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.flight-block.micro-event > * {
+  display: none !important;
 }
 .flight-block strong {
   font-size: 13px;

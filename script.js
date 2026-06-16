@@ -547,9 +547,18 @@ function renderTimeline() {
 
       const flightBlock = document.createElement("div");
       flightBlock.className = "flight-block";
-      flightBlock.style.left = `${(depMin / 1440) * 100}%`;
-      flightBlock.style.width = `${(durationMin / 1440) * 100}%`;
+
+      const leftPercent = (depMin / 1440) * 100;
+      const widthPercent = (durationMin / 1440) * 100;
+
+      flightBlock.style.left = `${leftPercent}%`;
+      flightBlock.style.width = `${widthPercent}%`;
+
       flightBlock.draggable = true;
+
+      if (durationMin < 45) {
+        flightBlock.classList.add("micro-event");
+      }
 
       const bgColor = flight.color || "#1a73e8";
       flightBlock.style.backgroundColor = bgColor;
@@ -680,3 +689,16 @@ document.addEventListener("click", (e) => {
     if (container) container.classList.remove("active");
   }
 });
+
+// === ELIMINAR EVENTO DESDE EL MENÚ DE EDICIÓN ===
+function deleteEventFromDrawer() {
+  const id = document.getElementById("editFlightInternalId").value;
+  if (confirm("¿Estás seguro de que deseas eliminar este evento?")) {
+    db.collection("flights")
+      .doc(id)
+      .delete()
+      .then(() => {
+        closeAllDrawers();
+      });
+  }
+}
