@@ -34,11 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
-  const header = document.getElementById("timeHeader");
-  for (let i = 0; i < 24; i++) {
-    header.innerHTML += `<div class="time-slot">${i.toString().padStart(2, "0")}:00</div>`;
-  }
-
   const today = new Date().toISOString().split("T")[0];
   const dateInputs = ["currentViewDate", "depDate", "arrDate"];
   dateInputs.forEach((id) => (document.getElementById(id).value = today));
@@ -99,6 +94,20 @@ function updateZoom() {
 
   // Cambiamos el ancho del contenedor en porcentaje (100% a 600%)
   scrollArea.style.width = `${zoomLevel}%`;
+
+  // === NUEVO: Recalcular micro-eventos en tiempo real al deslizar ===
+  const blocks = document.querySelectorAll(".flight-block");
+  blocks.forEach((block) => {
+    // Leemos el ancho que tiene asignado y lo cruzamos con el nivel de zoom
+    const widthPercent = parseFloat(block.style.width);
+    const effectiveVisualPercent = widthPercent * (zoomLevel / 100);
+
+    if (effectiveVisualPercent < 4) {
+      block.classList.add("micro-event");
+    } else {
+      block.classList.remove("micro-event");
+    }
+  });
 }
 
 // === GESTIÓN DE STANDS EN FIRESTORE ===
@@ -416,89 +425,156 @@ function closeAllDrawers() {
 
 // === CONTROL DE VISTAS ===
 function changeViewDay(offset) {
+  const scale = document.getElementById("timeScale").value;
   const dateInput = document.getElementById("currentViewDate");
   const currentDate = new Date(dateInput.value);
-  currentDate.setDate(currentDate.getDate() + offset);
+
+  if (scale === "day") {
+    currentDate.setDate(currentDate.getDate() + offset);
+  } else if (scale === "week") {
+    currentDate.setDate(currentDate.getDate() + offset * 7);
+  } else if (scale === "month") {
+    currentDate.setMonth(currentDate.getMonth() + offset);
+  }
+
   dateInput.value = currentDate.toISOString().split("T")[0];
   renderTimeline();
 
   const container = document.querySelector(".timeline-container");
   container.scrollLeft =
-    offset === 1 ? 0 : container.scrollWidth - container.clientWidth;
+    offset > 0 ? 0 : container.scrollWidth - container.clientWidth;
 }
 
 // === RENDERIZADO PRINCIPAL ===
 function renderTimeline() {
   const sidebar = document.getElementById("sidebar");
   const rowsContainer = document.getElementById("rowsContainer");
+  const header = document.getElementById("timeHeader");
   const viewDateStr = document.getElementById("currentViewDate").value;
-  const viewStart = new Date(`${viewDateStr}T00:00:00`);
-  const viewEnd = new Date(`${viewDateStr}T23:59:59`);
+  const baseDate = new Date(`${viewDateStr}T00:00:00`);
+
+  const scale = document.getElementById("timeScale").value;
+
+  let viewStart, viewEnd, totalMinutes, slotCount;
+
+  // 1. CALCULAR LOS LÍMITES DE LA VISTA Y MINUTOS TOTALES
+  if (scale === "day") {
+    viewStart = new Date(baseDate);
+    viewStart.setHours(0, 0, 0, 0);
+    viewEnd = new Date(baseDate);
+    viewEnd.setHours(23, 59, 59, 999);
+    totalMinutes = 24 * 60;
+    slotCount = 24;
+  } else if (scale === "week") {
+    // Buscar el Lunes de esa semana
+    viewStart = new Date(baseDate);
+    const day = viewStart.getDay();
+    const diff = viewStart.getDate() - day + (day === 0 ? -6 : 1);
+    viewStart.setDate(diff);
+    viewStart.setHours(0, 0, 0, 0);
+
+    viewEnd = new Date(viewStart);
+    viewEnd.setDate(viewStart.getDate() + 6);
+    viewEnd.setHours(23, 59, 59, 999);
+    totalMinutes = 7 * 24 * 60;
+    slotCount = 7;
+  } else if (scale === "month") {
+    viewStart = new Date(
+      baseDate.getFullYear(),
+      baseDate.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    viewEnd = new Date(
+      baseDate.getFullYear(),
+      baseDate.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+    const daysInMonth = viewEnd.getDate();
+    totalMinutes = daysInMonth * 24 * 60;
+    slotCount = daysInMonth;
+  }
+
+  // 2. DIBUJAR CABECERAS DINÁMICAS (Y ajustar líneas del CSS)
+  document.documentElement.style.setProperty(
+    "--grid-size",
+    `calc(100% / ${slotCount})`,
+  );
+  header.innerHTML = "";
+
+  if (scale === "day") {
+    for (let i = 0; i < 24; i++) {
+      header.innerHTML += `<div class="time-slot">${i.toString().padStart(2, "0")}:00</div>`;
+    }
+  } else if (scale === "week") {
+    const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(viewStart);
+      d.setDate(d.getDate() + i);
+      header.innerHTML += `<div class="time-slot" style="padding-top: 12px; font-size: 13px;"><b>${diasSemana[d.getDay()]}</b> ${d.getDate()}</div>`;
+    }
+  } else if (scale === "month") {
+    for (let i = 1; i <= slotCount; i++) {
+      header.innerHTML += `<div class="time-slot" style="padding-top: 12px;">${i}</div>`;
+    }
+  }
 
   sidebar.innerHTML = "";
   rowsContainer.innerHTML = "";
-
   let draggedStandId = null;
 
+  // 3. RENDERIZAR STANDS
   standsData.forEach((stand) => {
-    // 1. RENDERIZAR SIDEBAR ITEM
     const standEl = document.createElement("div");
     standEl.className = "sidebar-item";
     standEl.style.backgroundColor = stand.color;
-
-    // === NUEVO: CONTRASTE DINÁMICO EN EL TEXTO DEL STAND ===
-    const standTextColor = getContrastColor(stand.color);
-    standEl.style.color = standTextColor;
-
+    standEl.style.color = getContrastColor(stand.color);
     standEl.draggable = true;
     standEl.dataset.id = stand.id;
 
-    // Se han implementado botones unificados ("✎" para editar y "×" para borrar)
-    // El color "inherit" hace que copien el color contrastado dinámico
     standEl.innerHTML = `
-            <span>${stand.name}</span>
-            <div class="stand-actions">
-              <button class="action-stand edit-stand" onclick="openEditStandDrawer('${stand.id}')" style="color: inherit;">✎</button>
-              <button class="action-stand delete-stand" onclick="deleteStand('${stand.id}')" style="color: inherit;">×</button>
-            </div>
-        `;
+        <span>${stand.name}</span>
+        <div class="stand-actions">
+          <button class="action-stand edit-stand" onclick="openEditStandDrawer('${stand.id}')" style="color: inherit;">✎</button>
+          <button class="action-stand delete-stand" onclick="deleteStand('${stand.id}')" style="color: inherit;">×</button>
+        </div>
+    `;
 
-    standEl.addEventListener("dragstart", (e) => {
+    // Lógica Drag and Drop para orden de Stands
+    standEl.addEventListener("dragstart", () => {
       draggedStandId = stand.id;
       standEl.classList.add("dragging-stand");
     });
-
     standEl.addEventListener("dragover", (e) => {
       e.preventDefault();
       if (stand.id !== draggedStandId) standEl.classList.add("drag-over-stand");
     });
-
-    standEl.addEventListener("dragleave", () => {
-      standEl.classList.remove("drag-over-stand");
-    });
-
+    standEl.addEventListener("dragleave", () =>
+      standEl.classList.remove("drag-over-stand"),
+    );
     standEl.addEventListener("drop", (e) => {
       e.preventDefault();
       standEl.classList.remove("drag-over-stand");
-
       if (draggedStandId === null || draggedStandId === stand.id) return;
 
       const currentStand = standsData.find((s) => s.id === stand.id);
       const currentIndex = standsData.findIndex((s) => s.id === stand.id);
-
       let newOrder;
-      const step = 1000;
-
       if (currentIndex === 0) {
-        newOrder = currentStand.order - step;
+        newOrder = currentStand.order - 1000;
       } else {
         const previousStand = standsData[currentIndex - 1];
         newOrder = (previousStand.order + currentStand.order) / 2;
       }
-
       db.collection("stands").doc(draggedStandId).update({ order: newOrder });
     });
-
     standEl.addEventListener("dragend", () => {
       standEl.classList.remove("dragging-stand");
       draggedStandId = null;
@@ -506,7 +582,7 @@ function renderTimeline() {
 
     sidebar.appendChild(standEl);
 
-    // 2. RENDERIZAR FILA DEL TIMELINE
+    // 4. FILA DE EVENTOS
     const rowEl = document.createElement("div");
     rowEl.className = "row";
     rowEl.dataset.standId = stand.id;
@@ -525,7 +601,6 @@ function renderTimeline() {
       const draggedFlight = flightsData.find((f) => f.id === flightId);
 
       if (!draggedFlight || draggedFlight.standId === stand.id) return;
-
       const hasOverlap = flightsData.some(
         (f) =>
           f.id !== draggedFlight.id &&
@@ -534,13 +609,12 @@ function renderTimeline() {
           draggedFlight.arrivalObj > f.departureObj,
       );
       if (hasOverlap) return alert("Conflicto: Stand ocupado.");
-
       db.collection("flights")
         .doc(draggedFlight.id)
         .update({ standId: stand.id });
     });
 
-    // 3. RENDERIZAR VUELOS DE ESTE STAND
+    // 5. CÁLCULO DE VUELOS UNIVERSAL
     const standFlights = flightsData.filter((f) => f.standId === stand.id);
 
     standFlights.forEach((flight) => {
@@ -552,22 +626,27 @@ function renderTimeline() {
       const visibleEnd =
         flight.arrivalObj > viewEnd ? viewEnd : flight.arrivalObj;
 
-      const depMin = visibleStart.getHours() * 60 + visibleStart.getMinutes();
-      const durationMin =
-        visibleEnd.getHours() * 60 + visibleEnd.getMinutes() - depMin;
+      // Usamos el "timestamp" para calcular en cualquier escala (minutos relativos)
+      const offsetMs = visibleStart.getTime() - viewStart.getTime();
+      const offsetMin = offsetMs / (1000 * 60);
+
+      const durationMs = visibleEnd.getTime() - visibleStart.getTime();
+      const durationMin = durationMs / (1000 * 60);
 
       const flightBlock = document.createElement("div");
       flightBlock.className = "flight-block";
 
-      const leftPercent = (depMin / 1440) * 100;
-      const widthPercent = (durationMin / 1440) * 100;
+      const leftPercent = (offsetMin / totalMinutes) * 100;
+      const widthPercent = (durationMin / totalMinutes) * 100;
 
       flightBlock.style.left = `${leftPercent}%`;
       flightBlock.style.width = `${widthPercent}%`;
-
       flightBlock.draggable = true;
 
-      if (durationMin < 45) {
+      const zoomLevel = document.getElementById("zoomSlider").value;
+      const effectiveVisualPercent = widthPercent * (zoomLevel / 100);
+
+      if (effectiveVisualPercent < 4) {
         flightBlock.classList.add("micro-event");
       }
 
@@ -575,8 +654,7 @@ function renderTimeline() {
       flightBlock.style.backgroundColor = bgColor;
       flightBlock.style.color = getContrastColor(bgColor);
 
-      // Aplicar texturas visuales CSS según el tipo de evento
-      const eventType = flight.type || "flight"; // Por si hay vuelos antiguos
+      const eventType = flight.type || "flight";
       if (eventType === "maintenance")
         flightBlock.classList.add("type-maintenance");
       if (eventType === "backup") flightBlock.classList.add("type-backup");
@@ -594,19 +672,11 @@ function renderTimeline() {
 
       const timeT = `${flight.departureObj < viewStart ? "◀ ... " : flight.depTime} - ${flight.arrivalObj > viewEnd ? " ... ▶" : flight.arrTime}`;
 
-      // Configurar el contenido interno según el tipo
       let icon = "";
       let routeHtml = "";
-
-      if (eventType === "maintenance") {
-        icon = "⚙️ ";
-        // En mantenimiento no mostramos origen/destino
-      } else if (eventType === "backup") {
-        icon = "🛡️ ";
-        // En backup tampoco mostramos origen/destino
-      } else {
-        routeHtml = `<span>${flight.org} → ${flight.dest}</span>`;
-      }
+      if (eventType === "maintenance") icon = "⚙️ ";
+      else if (eventType === "backup") icon = "🛡️ ";
+      else routeHtml = `<span>${flight.org} → ${flight.dest}</span>`;
 
       flightBlock.innerHTML = `
           <strong>${icon}${flight.flightNum}</strong>

@@ -482,13 +482,12 @@ body.dark-mode .action-stand {
   height: 80px;
   border-bottom: 1px solid var(--border-light);
   position: relative;
-  background-image: repeating-linear-gradient(
+  background-image: linear-gradient(
     90deg,
-    transparent,
-    transparent 119px,
-    var(--row-bg-alt) 119px,
-    var(--row-bg-alt) 120px
+    transparent calc(100% - 1px),
+    var(--row-bg-alt) calc(100% - 1px)
   );
+  background-size: var(--grid-size, calc(100% / 24)) 100%;
 }
 .row.drag-over {
   background-color: rgba(11, 87, 208, 0.08) !important;

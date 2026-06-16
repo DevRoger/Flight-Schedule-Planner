@@ -202,7 +202,32 @@
       class="timeline-controls card"
       style="justify-content: space-between; padding: 10px 24px"
     >
-      <div style="flex: 1"></div>
+      <div style="flex: 1; display: flex; align-items: center; gap: 10px">
+        <span
+          class="material-icons"
+          style="color: var(--text-sec); font-size: 20px"
+          >calendar_month</span
+        >
+        <select
+          id="timeScale"
+          onchange="renderTimeline()"
+          style="
+            height: 36px;
+            border-radius: 18px;
+            border: 1px solid var(--border-light);
+            background: var(--background);
+            padding: 0 16px;
+            color: var(--text-main);
+            cursor: pointer;
+            outline: none;
+            font-weight: 500;
+          "
+        >
+          <option value="day">Vista Diaria</option>
+          <option value="week">Vista Semanal</option>
+          <option value="month">Vista Mensual</option>
+        </select>
+      </div>
 
       <div
         style="
@@ -213,18 +238,14 @@
           flex: 1;
         "
       >
-        <button onclick="changeViewDay(-1)" class="btn-icon">
-          ◀ Día Anterior
-        </button>
+        <button onclick="changeViewDay(-1)" class="btn-icon">◀ Anterior</button>
         <input
           type="date"
           id="currentViewDate"
           onchange="renderTimeline()"
           class="date-display"
         />
-        <button onclick="changeViewDay(1)" class="btn-icon">
-          Día Siguiente ▶
-        </button>
+        <button onclick="changeViewDay(1)" class="btn-icon">Siguiente ▶</button>
       </div>
 
       <div
