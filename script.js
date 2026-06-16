@@ -17,7 +17,7 @@ const db = firebase.firestore();
 let standsData = [];
 let flightsData = [];
 
-const airports = ["BCN", "EZE", "BOG", "XPL", "UIO"];
+const airports = ["BCN", "EZE", "BOG", "XPL", "GYE"];
 
 // === INICIALIZACIÓN DE LA APP ===
 document.addEventListener("DOMContentLoaded", () => {
@@ -162,6 +162,17 @@ function saveStandEdit() {
     })
     .then(() => closeAllDrawers())
     .catch((err) => alert("Error al actualizar: " + err));
+}
+
+// === NAVEGACIÓN DEL MENÚ PRINCIPAL ===
+function openNav() {
+  document.getElementById("navOverlay").classList.add("active");
+  document.getElementById("mainNav").classList.add("open");
+}
+
+function closeNav() {
+  document.getElementById("navOverlay").classList.remove("active");
+  document.getElementById("mainNav").classList.remove("open");
 }
 
 // === LÓGICA DE PESTAÑAS Y TIPOS DE EVENTO ===

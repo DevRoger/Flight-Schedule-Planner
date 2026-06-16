@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AeroSchedule Pro - Gestión de Datos</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="nav-overlay" id="navOverlay" onclick="closeNav()"></div>
+    <nav class="nav-drawer" id="mainNav">
+      <div class="nav-header">
+        <span class="material-icons app-logo" style="color: var(--primary)"
+          >flight_takeoff</span
+        >
+        <h2>AeroSchedule</h2>
+      </div>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">
+          <span class="material-icons">dashboard</span> Inicio / Planner
+        </a>
+        <a href="data.html" class="nav-link active">
+          <span class="material-icons">storage</span> Gestión de Datos
+        </a>
+      </div>
+    </nav>
+
+    <header class="top-bar">
+      <div class="top-bar-start">
+        <span
+          class="material-icons menu-icon"
+          onclick="openNav()"
+          style="cursor: pointer; margin-right: 12px; color: var(--text-sec)"
+          >menu</span
+        >
+        <span class="material-icons app-logo" style="color: var(--primary)"
+          >storage</span
+        >
+        <h1 class="app-title">Base de Datos</h1>
+      </div>
+      <div class="top-bar-end">
+        <div class="theme-switch-wrapper">
+          <span class="material-icons theme-icon">light_mode</span>
+          <label class="switch">
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme()" />
+            <span class="slider"></span>
+          </label>
+          <span class="material-icons theme-icon">dark_mode</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="data-container">
+      <div class="card data-card">
+        <h3>
+          <span class="material-icons">file_download</span> Exportar Copia de
+          Seguridad
+        </h3>
+        <p>
+          Descarga toda la infraestructura de Stands y la programación temporal
+          en un archivo JSON seguro. Puedes usar este archivo para restaurar tu
+          trabajo más adelante.
+        </p>
+        <button
+          class="btn-primary"
+          onclick="exportData()"
+          style="width: max-content; margin-top: 12px"
+        >
+          <span class="material-icons" style="font-size: 18px">download</span>
+          Descargar JSON
+        </button>
+      </div>
+
+      <div class="card data-card">
+        <h3>
+          <span class="material-icons">file_upload</span> Importar / Restaurar
+          Datos
+        </h3>
+        <p>
+          Sube un archivo JSON de AeroSchedule previamente exportado. El sistema
+          fusionará los datos de forma inteligente sin crear eventos duplicados.
+        </p>
+        <div
+          style="
+            margin-top: 12px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+          "
+        >
+          <label class="file-upload-label">
+            <input
+              type="file"
+              id="jsonFileInput"
+              accept=".json"
+              onchange="handleFileSelect(event)"
+            />
+            <span class="material-icons" style="font-size: 18px"
+              >folder_open</span
+            >
+            Seleccionar Archivo
+          </label>
+          <span
+            id="fileNameDisplay"
+            style="color: var(--text-sec); font-size: 14px; font-weight: 500"
+            >Ningún archivo seleccionado</span
+          >
+        </div>
+        <button
+          class="btn-success"
+          id="importBtn"
+          onclick="importData()"
+          style="width: max-content; margin-top: 12px; display: none"
+        >
+          <span class="material-icons" style="font-size: 18px"
+            >cloud_upload</span
+          >
+          Procesar e Importar
+        </button>
+      </div>
+
+      <div class="card data-card">
+        <h3>
+          <span class="material-icons">data_object</span> Importar JSON Manual
+        </h3>
+        <p>
+          Pega directamente el código JSON aquí para importar los datos de forma
+          instantánea sin necesidad de subir un archivo.
+        </p>
+        <textarea
+          id="jsonTextInput"
+          class="json-textarea"
+          placeholder='{ "metadata": { ... }, "stands": [ ... ], "flights": [ ... ] }'
+        ></textarea>
+        <button
+          class="btn-success"
+          onclick="importDataFromText()"
+          style="width: max-content; margin-top: 12px"
+        >
+          <span class="material-icons" style="font-size: 18px">code</span>
+          Importar Texto
+        </button>
+      </div>
+
+      <div
+        class="card data-card danger-zone"
+        style="border: 1px solid rgba(186, 26, 26, 0.3)"
+      >
+        <h3>
+          <span class="material-icons">delete_forever</span> Zona de Peligro
+        </h3>
+        <p>
+          Esta acción borrará permanentemente todos los Stands, Vuelos,
+          Mantenimientos y Reservas de la base de datos de Firebase. Esta acción
+          no se puede deshacer.
+        </p>
+        <button
+          class="btn-danger"
+          onclick="clearDatabase()"
+          style="width: max-content; margin-top: 12px"
+        >
+          <span class="material-icons" style="font-size: 18px">warning</span>
+          Borrar Toda la Base de Datos
+        </button>
+      </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="data.js"></script>
+  </body>
+</html>
