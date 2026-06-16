@@ -71,21 +71,9 @@
           <span class="material-icons" style="font-size: 18px">flight</span>
           Vuelo Comercial
         </button>
-        <button
-          class="tab-btn"
-          id="tab-maintenance"
-          onclick="setEventType('maintenance')"
-        >
+        <button class="tab-btn" id="tab-task" onclick="setEventType('task')">
           <span class="material-icons" style="font-size: 18px">build</span>
-          Mantenimiento
-        </button>
-        <button
-          class="tab-btn"
-          id="tab-backup"
-          onclick="setEventType('backup')"
-        >
-          <span class="material-icons" style="font-size: 18px">security</span>
-          Backup / Reserva
+          Mantenimiento / Reserva
         </button>
       </div>
 
@@ -141,15 +129,23 @@
                 transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
               "
             >
-              <input
-                type="text"
-                id="flightId"
-                placeholder="Ej: IB123"
-                style="width: 100%"
-                oninput="showSuggestions(this.value)"
-                autocomplete="off"
-              />
-              <div id="routeSuggestions" class="suggestions-container"></div>
+              <div id="flightInputContainer" style="width: 100%">
+                <input
+                  type="text"
+                  id="flightId"
+                  placeholder="Ej: IB123"
+                  style="width: 100%"
+                  oninput="showSuggestions(this.value)"
+                  autocomplete="off"
+                />
+                <div id="routeSuggestions" class="suggestions-container"></div>
+              </div>
+
+              <select
+                id="taskSelect"
+                style="display: none; width: 100%"
+                onchange="updateTaskColor('new')"
+              ></select>
             </div>
 
             <div id="routeContainer" style="display: flex; gap: 5px">
@@ -309,8 +305,15 @@
 
         <div class="control-group">
           <label id="editIdLabel">ID y Color</label>
-          <div style="display: flex; gap: 10px">
+          <div style="display: flex; gap: 10px; width: 100%">
             <input type="text" id="editFlightId" style="flex: 1" />
+
+            <select
+              id="editTaskSelect"
+              style="display: none; flex: 1"
+              onchange="updateTaskColor('edit')"
+            ></select>
+
             <input type="color" id="editFlightColor" style="width: 50px" />
           </div>
         </div>

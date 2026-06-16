@@ -19,6 +19,66 @@ let flightsData = [];
 
 const airports = ["BCN", "EZE", "BOG", "XPL", "GYE"];
 
+// === DICCIONARIO DE TAREAS Y MANTENIMIENTOS ===
+const taskTypes = [
+  {
+    id: "BACKUP",
+    label: "Standby / Reserva",
+    type: "backup",
+    color: "#5f6368",
+  },
+  {
+    id: "LM-ESC",
+    label: "Escala / Turnaround",
+    type: "maintenance",
+    color: "#ea8600",
+  },
+  {
+    id: "LM-PER",
+    label: "Pernocta (Overnight)",
+    type: "maintenance",
+    color: "#f29900",
+  },
+  { id: "A-CHECK", label: "Mto. Menor", type: "maintenance", color: "#fbbc04" },
+  { id: "C-CHECK", label: "Mto. Mayor", type: "maintenance", color: "#d93025" },
+  {
+    id: "D-CHECK",
+    label: "Mto. Pesado (HMV)",
+    type: "maintenance",
+    color: "#8b0000",
+  },
+  {
+    id: "AOG",
+    label: "Mto. No programado",
+    type: "maintenance",
+    color: "#e52592",
+  },
+  {
+    id: "MOD",
+    label: "Modificaciones Técnicas",
+    type: "maintenance",
+    color: "#8e24aa",
+  },
+  {
+    id: "CLEAN",
+    label: "Limpieza profunda",
+    type: "maintenance",
+    color: "#00acc1",
+  },
+];
+
+function initTaskSelects() {
+  const selects = ["taskSelect", "editTaskSelect"];
+  selects.forEach((selId) => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = "";
+    taskTypes.forEach((task) => {
+      sel.innerHTML += `<option value="${task.id}">${task.id} - ${task.label}</option>`;
+    });
+  });
+}
+
 // === INICIALIZACIÓN DE LA APP ===
 document.addEventListener("DOMContentLoaded", () => {
   if (localStorage.getItem("theme") === "dark") {
@@ -62,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTimeline();
   });
 
+  initTaskSelects();
   updateZoom();
 });
 
@@ -196,7 +257,7 @@ function closeNav() {
 }
 
 // === LÓGICA DE PESTAÑAS Y TIPOS DE EVENTO ===
-let currentEventType = "flight"; // Por defecto
+let currentEventType = "flight";
 
 function setEventType(type) {
   currentEventType = type;
@@ -207,58 +268,72 @@ function setEventType(type) {
     .forEach((btn) => btn.classList.remove("active"));
   document.getElementById("tab-" + type).classList.add("active");
 
-  // Alternar campos del formulario
   const routeContainer = document.getElementById("routeContainer");
   const idLabel = document.getElementById("idLabel");
-  const colorInput = document.getElementById("flightColor");
-  const flightIdInput = document.getElementById("flightId");
+  const flightInputContainer = document.getElementById("flightInputContainer");
+  const taskSelect = document.getElementById("taskSelect");
   const submitBtn = document.getElementById("submitBtnText");
-  const idInputWrapper = document.getElementById("idInputWrapper"); // <-- NUEVO
+  const idInputWrapper = document.getElementById("idInputWrapper");
 
   if (type === "flight") {
     routeContainer.style.display = "flex";
-    idInputWrapper.style.width = "120px"; // <-- Vuelve a ser pequeño
+    flightInputContainer.style.display = "block";
+    taskSelect.style.display = "none";
+    idInputWrapper.style.width = "120px";
     idLabel.innerText = "ID, Ruta y Color";
-    colorInput.value = "#0b57d0";
-    flightIdInput.placeholder = "Ej: IB123";
     submitBtn.innerText = "Programar Vuelo";
-  } else if (type === "maintenance") {
+    document.getElementById("flightColor").value = "#0b57d0";
+  } else if (type === "task") {
     routeContainer.style.display = "none";
-    idInputWrapper.style.width = "280px"; // <-- Se expande para texto largo
-    idLabel.innerText = "Tarea de Mantenimiento y Color";
-    colorInput.value = "#ea8600";
-    flightIdInput.placeholder = "Ej: Rev. Motor A";
-    submitBtn.innerText = "Fijar Mantenimiento";
-  } else if (type === "backup") {
-    routeContainer.style.display = "none";
-    idInputWrapper.style.width = "280px"; // <-- Se expande para texto largo
-    idLabel.innerText = "Motivo de Reserva y Color";
-    colorInput.value = "#5f6368";
-    flightIdInput.placeholder = "Ej: A320 Standby";
-    submitBtn.innerText = "Asignar Backup";
+    flightInputContainer.style.display = "none";
+    taskSelect.style.display = "block";
+    idInputWrapper.style.width = "280px";
+    idLabel.innerText = "Tarea / Motivo y Color";
+    submitBtn.innerText = "Programar Evento";
+    updateTaskColor("new"); // Fuerza el color automático al entrar
+  }
+}
+
+// Cambia el color automáticamente según la opción elegida
+function updateTaskColor(mode) {
+  if (mode === "new") {
+    const val = document.getElementById("taskSelect").value;
+    const task = taskTypes.find((t) => t.id === val);
+    if (task) document.getElementById("flightColor").value = task.color;
+  } else if (mode === "edit") {
+    const val = document.getElementById("editTaskSelect").value;
+    const task = taskTypes.find((t) => t.id === val);
+    if (task) document.getElementById("editFlightColor").value = task.color;
   }
 }
 
 // === GESTIÓN DE VUELOS EN FIRESTORE ===
 function addFlight() {
+  const isFlight = currentEventType === "flight";
+  const flightIdVal = isFlight
+    ? document.getElementById("flightId").value
+    : document.getElementById("taskSelect").value;
+  const originVal = isFlight ? document.getElementById("origin").value : "";
+  const destVal = isFlight ? document.getElementById("destination").value : "";
+
+  // Averiguar si la tarea elegida es "maintenance" o "backup" para dibujarla bien en el timeline
+  let finalType = "flight";
+  if (!isFlight) {
+    const task = taskTypes.find((t) => t.id === flightIdVal);
+    finalType = task ? task.type : "maintenance";
+  }
+
   const data = {
-    flightId: document.getElementById("flightId").value,
+    flightId: flightIdVal,
     depDate: document.getElementById("depDate").value,
     depTime: document.getElementById("depTime").value,
     arrDate: document.getElementById("arrDate").value,
     arrTime: document.getElementById("arrTime").value,
     standSelect: document.getElementById("standSelect").value,
     flightColor: document.getElementById("flightColor").value,
-    // La ruta solo se captura si estamos en la pestaña Vuelo
-    origin:
-      currentEventType === "flight"
-        ? document.getElementById("origin").value
-        : "",
-    destination:
-      currentEventType === "flight"
-        ? document.getElementById("destination").value
-        : "",
-    type: currentEventType, // GUARDAMOS EL TIPO EN FIREBASE
+    origin: originVal,
+    destination: destVal,
+    type: finalType,
   };
 
   if (
@@ -321,95 +396,105 @@ function openEditDrawer(flightId) {
   const flight = flightsData.find((f) => f.id === flightId);
   if (!flight) return;
 
-  // 1. Identificar tipo de evento y adaptar la interfaz del menú
   const eventType = flight.type || "flight";
   document.getElementById("editEventType").value = eventType;
 
   const editRouteContainer = document.getElementById("editRouteContainer");
   const editIdLabel = document.getElementById("editIdLabel");
+  const editFlightId = document.getElementById("editFlightId");
+  const editTaskSelect = document.getElementById("editTaskSelect");
 
   if (eventType === "flight") {
     editRouteContainer.style.display = "flex";
+    editFlightId.style.display = "block";
+    editTaskSelect.style.display = "none";
     editIdLabel.innerText = "ID, Ruta y Color";
-  } else if (eventType === "maintenance") {
+    editFlightId.value = flight.flightNum;
+  } else {
     editRouteContainer.style.display = "none";
-    editIdLabel.innerText = "Tarea de Mantenimiento y Color";
-  } else if (eventType === "backup") {
-    editRouteContainer.style.display = "none";
-    editIdLabel.innerText = "Motivo de Reserva y Color";
+    editFlightId.style.display = "none";
+    editTaskSelect.style.display = "block";
+    editIdLabel.innerText = "Tarea / Motivo y Color";
+
+    // Evita romper los mantenimientos antiguos como "REV-MOTOR"
+    const exists = taskTypes.some((t) => t.id === flight.flightNum);
+    if (!exists) {
+      const opt = document.createElement("option");
+      opt.value = flight.flightNum;
+      opt.text = flight.flightNum + " (Legacy)";
+      editTaskSelect.appendChild(opt);
+    }
+    editTaskSelect.value = flight.flightNum;
   }
 
-  // 2. Cargar datos en los inputs
-  const mapping = {
-    editFlightInternalId: "id",
-    editFlightId: "flightNum",
-    editOrigin: "org",
-    editDestination: "dest",
-    editDepDate: "depDate",
-    editDepTime: "depTime",
-    editArrDate: "arrDate",
-    editArrTime: "arrTime",
-    editStandSelect: "standId",
-    editFlightColor: "color",
-  };
-
-  for (const elId in mapping) {
-    document.getElementById(elId).value =
-      flight[mapping[elId]] || (elId === "editFlightColor" ? "#1a73e8" : "");
-  }
+  // Carga general de fechas y stands
+  document.getElementById("editFlightInternalId").value = flight.id;
+  document.getElementById("editOrigin").value = flight.org || "";
+  document.getElementById("editDestination").value = flight.dest || "";
+  document.getElementById("editDepDate").value = flight.depDate;
+  document.getElementById("editDepTime").value = flight.depTime;
+  document.getElementById("editArrDate").value = flight.arrDate;
+  document.getElementById("editArrTime").value = flight.arrTime;
+  document.getElementById("editStandSelect").value = flight.standId;
+  document.getElementById("editFlightColor").value =
+    flight.color || (eventType === "flight" ? "#1a73e8" : "#ea8600");
 
   document.getElementById("drawerOverlay").classList.add("active");
   document.getElementById("editDrawer").classList.add("active");
 }
 
 function saveFlightEdit() {
-  const fields = [
-    "editFlightInternalId",
-    "editFlightId",
-    "editOrigin",
-    "editDestination",
-    "editDepDate",
-    "editDepTime",
-    "editArrDate",
-    "editArrTime",
-    "editStandSelect",
-    "editFlightColor",
-  ];
-  const data = {};
-  fields.forEach((f) => (data[f] = document.getElementById(f).value));
-
-  // Saber de qué tipo es el evento para no borrar/guardar rutas equivocadas
   const eventType = document.getElementById("editEventType").value;
-  const origin = eventType === "flight" ? data.editOrigin : "";
-  const destination = eventType === "flight" ? data.editDestination : "";
+  const isFlight = eventType === "flight";
 
-  const departure = new Date(`${data.editDepDate}T${data.editDepTime}`);
-  const arrival = new Date(`${data.editArrDate}T${data.editArrTime}`);
+  const flightIdVal = isFlight
+    ? document.getElementById("editFlightId").value
+    : document.getElementById("editTaskSelect").value;
+  const originVal = isFlight ? document.getElementById("editOrigin").value : "";
+  const destVal = isFlight
+    ? document.getElementById("editDestination").value
+    : "";
+
+  // Si se cambia de tarea, asegurar que el tipo de evento se actualice (ej: de CM a Backup)
+  let finalType = eventType;
+  if (!isFlight) {
+    const task = taskTypes.find((t) => t.id === flightIdVal);
+    if (task) finalType = task.type;
+  }
+
+  const depDate = document.getElementById("editDepDate").value;
+  const depTime = document.getElementById("editDepTime").value;
+  const arrDate = document.getElementById("editArrDate").value;
+  const arrTime = document.getElementById("editArrTime").value;
+  const departure = new Date(`${depDate}T${depTime}`);
+  const arrival = new Date(`${arrDate}T${arrTime}`);
+  const standSel = document.getElementById("editStandSelect").value;
+  const internalId = document.getElementById("editFlightInternalId").value;
 
   if (arrival <= departure) return alert("Llegada posterior a salida.");
 
   const hasOverlap = flightsData.some(
     (f) =>
-      f.id !== data.editFlightInternalId &&
-      f.standId === data.editStandSelect &&
+      f.id !== internalId &&
+      f.standId === standSel &&
       departure < f.arrivalObj &&
       arrival > f.departureObj,
   );
   if (hasOverlap) return alert("¡Conflicto con otro evento en ese Stand!");
 
-  // Guardar cambios en Firestore
   db.collection("flights")
-    .doc(data.editFlightInternalId)
+    .doc(internalId)
     .update({
-      flightNum: data.editFlightId,
-      org: origin, // Ruta filtrada por tipo
-      dest: destination, // Ruta filtrada por tipo
-      depDate: data.editDepDate,
-      depTime: data.editDepTime,
-      arrDate: data.editArrDate,
-      arrTime: data.editArrTime,
-      standId: data.editStandSelect,
-      color: data.editFlightColor,
+      flightNum: flightIdVal,
+      org: originVal,
+      dest: destVal,
+      depDate: depDate,
+      depTime: depTime,
+      arrDate: arrDate,
+      arrTime: arrTime,
+      standId: standSel,
+      color: document.getElementById("editFlightColor").value,
+      type: finalType, // Manda el tipo actualizado
       departureObj: firebase.firestore.Timestamp.fromDate(departure),
       arrivalObj: firebase.firestore.Timestamp.fromDate(arrival),
     })
