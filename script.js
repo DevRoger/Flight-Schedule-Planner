@@ -66,6 +66,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     renderTimeline();
   });
+
+  updateZoom();
 });
 
 // === TEMA Y DISEÑO ===
@@ -88,6 +90,15 @@ function getContrastColor(hexcolor) {
   const b = parseInt(hexcolor.substr(4, 2), 16);
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
   return yiq >= 128 ? "#202124" : "#ffffff";
+}
+
+// === CONTROL DE ZOOM ===
+function updateZoom() {
+  const zoomLevel = document.getElementById("zoomSlider").value;
+  const scrollArea = document.getElementById("timelineScrollArea");
+
+  // Cambiamos el ancho del contenedor en porcentaje (100% a 600%)
+  scrollArea.style.width = `${zoomLevel}%`;
 }
 
 // === GESTIÓN DE STANDS EN FIRESTORE ===

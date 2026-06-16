@@ -451,7 +451,10 @@ body.dark-mode .action-stand {
   background: var(--timeline-bg);
 }
 .timeline-scroll {
-  width: 2880px;
+  /* El ancho por defecto ahora es 200%, pero el JS lo controlará */
+  width: 200%;
+  min-width: 100%; /* Evita que se haga más pequeño que la pantalla */
+  transition: width 0.2s ease-out; /* Animación suave al hacer zoom */
 }
 
 .time-header {
@@ -907,4 +910,48 @@ input[type="file"] {
     inset 0 0 0 1px var(--primary),
     0 0 0 3px rgba(11, 87, 208, 0.15);
   outline: none;
+}
+
+/* === ZOOM SLIDER === */
+.zoom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 150px;
+  height: 4px !important;
+  background: var(--border-light) !important;
+  border-radius: 4px;
+  outline: none;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s;
+}
+
+.zoom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.zoom-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s;
+}
+
+.zoom-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
 }

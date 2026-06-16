@@ -198,19 +198,65 @@
       </div>
     </div>
 
-    <div class="timeline-controls card">
-      <button onclick="changeViewDay(-1)" class="btn-icon">
-        ◀ Día Anterior
-      </button>
-      <input
-        type="date"
-        id="currentViewDate"
-        onchange="renderTimeline()"
-        class="date-display"
-      />
-      <button onclick="changeViewDay(1)" class="btn-icon">
-        Día Siguiente ▶
-      </button>
+    <div
+      class="timeline-controls card"
+      style="justify-content: space-between; padding: 10px 24px"
+    >
+      <div style="flex: 1"></div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 15px;
+          flex: 1;
+        "
+      >
+        <button onclick="changeViewDay(-1)" class="btn-icon">
+          ◀ Día Anterior
+        </button>
+        <input
+          type="date"
+          id="currentViewDate"
+          onchange="renderTimeline()"
+          class="date-display"
+        />
+        <button onclick="changeViewDay(1)" class="btn-icon">
+          Día Siguiente ▶
+        </button>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+          flex: 1;
+        "
+        title="Ajustar escala del timeline"
+      >
+        <span
+          class="material-icons"
+          style="color: var(--text-sec); font-size: 20px"
+          >zoom_out</span
+        >
+        <input
+          type="range"
+          id="zoomSlider"
+          class="zoom-slider"
+          min="100"
+          max="600"
+          value="200"
+          oninput="updateZoom()"
+        />
+        <span
+          class="material-icons"
+          style="color: var(--text-sec); font-size: 20px"
+          >zoom_in</span
+        >
+      </div>
     </div>
 
     <div class="planner-wrapper card">
